@@ -1,0 +1,84 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deadcode-archaeologist"
+version = "1.0.1"
+description = "Unearthing the code that time forgot — mine your git history for dead, deleted, and abandoned code."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+    { name = "DeadCode Archaeologist Contributors" }
+]
+keywords = [
+    "dead-code", "git", "code-analysis", "static-analysis",
+    "refactoring", "technical-debt", "archaeology"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Version Control :: Git",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "click>=8.0",
+    "rich>=13.0",
+    "gitpython>=3.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "ruff>=0.1",
+    "mypy>=1.0",
+]
+cov = [
+    "pytest-cov>=4.0",
+    "coverage>=7.0",
+]
+publish = [
+    "build>=1.0",
+    "twine>=5.0",
+]
+
+[project.scripts]
+archaeologist = "archaeologist.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/deadcode-archaeologist/deadcode-archaeologist"
+Repository = "https://github.com/deadcode-archaeologist/deadcode-archaeologist"
+"Bug Tracker" = "https://github.com/deadcode-archaeologist/deadcode-archaeologist/issues"
+Changelog = "https://github.com/deadcode-archaeologist/deadcode-archaeologist/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["archaeologist*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
