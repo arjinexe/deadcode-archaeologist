@@ -364,7 +364,9 @@ class Excavator:
             for blame_entry in blame:
                 commit_obj = blame_entry[0]
                 blame_lines = blame_entry[1]
-                if commit_obj is None or not hasattr(commit_obj, "author"):
+                if not isinstance(commit_obj, git.Commit):
+                    continue
+                if not isinstance(blame_lines, (list, range)):
                     continue
                 age = _age_days(commit_obj)
                 if age < 180:
