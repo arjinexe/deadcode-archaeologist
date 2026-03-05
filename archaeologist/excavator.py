@@ -267,7 +267,10 @@ class Excavator:
         self.workers = workers
 
     def _get_repo(self) -> git.Repo:
-        return git.Repo(self.repo_path)
+        try:
+            return git.Repo(self.repo_path)
+        except Exception as e:
+            raise RuntimeError(f"Cannot open git repository at {self.repo_path}: {e}") from e
 
     # ── Deleted blocks ─────────────────────────────────────────────────────
 

@@ -36,7 +36,7 @@ def _make_repo(tmp_path: Path) -> git.Repo:
 
 
 def _commit(
-    repo: git.Repo, message: str, files: dict, *, author_date: datetime = None
+    repo: git.Repo, message: str, files: dict, *, author_date: datetime | None = None
 ) -> git.Commit:
     """Write files and commit."""
     root = Path(repo.working_dir)
@@ -48,8 +48,6 @@ def _commit(
         else:
             fp.write_text(content)
     repo.git.add("-A")
-    if author_date:
-        author_date.strftime("%Y-%m-%dT%H:%M:%S%z") or author_date.isoformat()
     return repo.index.commit(message, author_date=author_date, commit_date=author_date)
 
 
