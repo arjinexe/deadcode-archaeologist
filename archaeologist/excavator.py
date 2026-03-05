@@ -172,23 +172,27 @@ def _process_commit_safe(repo_path: str, hexsha: str, age_days_val: int) -> list
 
         if diff.deleted_file:
             try:
-                raw = diff.a_blob.data_stream.read().decode("utf-8", errors="replace")
+                a_blob = diff.a_blob
+                a_path = diff.a_path or ""
+                if a_blob is None or not a_path:
+                    continue
+                raw = a_blob.data_stream.read().decode("utf-8", errors="replace")
                 lines = raw.splitlines()
-                if len(lines) >= MIN_DELETED_LINES and _is_code_file(diff.a_path):
+                if len(lines) >= MIN_DELETED_LINES and _is_code_file(a_path):
                     snippet = "\n".join(lines[:MAX_SNIPPET_LINES])
                     if len(lines) > MAX_SNIPPET_LINES:
                         snippet += f"\n... ({len(lines) - MAX_SNIPPET_LINES} more lines)"
                     results.append(
                         Artifact(
                             type=ArtifactType.DELETED_BLOCK,
-                            title=f"Entire file erased: {Path(diff.a_path).name}",
+                            title=f"Entire file erased: {Path(a_path).name}",
                             description=(
                                 f"{len(lines)}-line file committed by {commit.author.name} "
                                 f"on {commit.committed_datetime.strftime('%Y-%m-%d')} "
                                 f"— then deleted entirely."
                             ),
                             code_snippet=snippet,
-                            file_path=diff.a_path,
+                            file_path=a_path,
                             author=commit.author.name,
                             date=commit.committed_datetime,
                             commit_hash=commit.hexsha,
@@ -205,7 +209,10 @@ def _process_commit_safe(repo_path: str, hexsha: str, age_days_val: int) -> list
             continue
 
         try:
-            diff_text = diff.diff.decode("utf-8", errors="replace")
+            raw_diff = diff.diff
+            if raw_diff is None:
+                continue
+            diff_text = raw_diff.decode("utf-8", errors="replace") if isinstance(raw_diff, bytes) else raw_diff
         except Exception:
             continue
 
@@ -352,16 +359,22 @@ class Excavator:
             except Exception:
                 continue
 
-            for commit, lines in blame:
-                age = _age_days(commit)
+            if blame is None:
+                continue
+            for blame_entry in blame:
+                commit_obj = blame_entry[0]
+                blame_lines = blame_entry[1]
+                if commit_obj is None or not hasattr(commit_obj, "author"):
+                    continue
+                age = _age_days(commit_obj)
                 if age < 180:
                     continue
-                for line_bytes in lines:
+                for line_bytes in blame_lines:
                     try:
-                        line = (
+                        line: str = (
                             line_bytes.decode("utf-8", errors="replace")
                             if isinstance(line_bytes, bytes)
-                            else line_bytes
+                            else str(line_bytes)
                         )
                     except Exception:
                         continue
@@ -388,15 +401,15 @@ class Excavator:
                         type=ArtifactType.ANCIENT_TODO,
                         title=f"{marker} rotting for {age_str}",
                         description=(
-                            f'"{message}" — left by {commit.author.name} '
-                            f"on {commit.committed_datetime.strftime('%Y-%m-%d')} "
+                            f'"{message}" — left by {commit_obj.author.name} '
+                            f"on {commit_obj.committed_datetime.strftime('%Y-%m-%d')} "
                             f"and never addressed."
                         ),
                         code_snippet=line.strip(),
                         file_path=rel,
-                        author=commit.author.name,
-                        date=commit.committed_datetime,
-                        commit_hash=commit.hexsha,
+                        author=commit_obj.author.name,
+                        date=commit_obj.committed_datetime,
+                        commit_hash=commit_obj.hexsha,
                         tragedy_score=min(20 + (age // 30) * 3, 100),
                         age_days=age,
                         tags=["todo", marker.lower()],
@@ -416,7 +429,10 @@ class Excavator:
             return
 
         for commit in commits:
-            m = pat.search(commit.message)
+            msg = commit.message
+            if isinstance(msg, bytes):
+                msg = msg.decode("utf-8", errors="replace")
+            m = pat.search(msg)
             if not m:
                 continue
             original = m.group(1).strip()
@@ -441,7 +457,7 @@ class Excavator:
                     f"{len(files_affected)} file(s) affected, "
                     f"{total_changes} total line changes undone."
                 ),
-                code_snippet=commit.message.strip()[:300],
+                code_snippet=msg.strip()[:300],
                 file_path="(multiple files)",
                 author=commit.author.name,
                 date=commit.committed_datetime,

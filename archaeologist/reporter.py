@@ -22,6 +22,7 @@ try:
         MofNCompleteColumn,
         Progress,
         SpinnerColumn,
+        TaskID,
         TextColumn,
         TimeElapsedColumn,
     )
@@ -93,7 +94,7 @@ def _lang(file_path: str) -> str:
 class _ProgressHandle:
     """Wraps a Rich Progress task so callers can advance it."""
 
-    def __init__(self, progress: Progress, task_id: int) -> None:
+    def __init__(self, progress: Progress, task_id: "TaskID") -> None:
         self._progress = progress
         self._task_id = task_id
 

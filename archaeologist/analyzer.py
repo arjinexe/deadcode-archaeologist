@@ -185,9 +185,8 @@ def _dunder_all_names(tree: ast.AST) -> set[str]:
     for n in ast.walk(tree):
         if isinstance(n, ast.Assign):
             for t in n.targets:
-                if isinstance(t, ast.Name) and t.id == "__all__":
-                    if isinstance(n.value, (ast.List, ast.Tuple)):
-                        for elt in n.value.elts:
+                if isinstance(t, ast.Name) and t.id == "__all__" and isinstance(n.value, (ast.List, ast.Tuple)):
+                    for elt in n.value.elts:
                             if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
                                 names.add(elt.value)
     return names
@@ -259,9 +258,8 @@ def _assigned_names_in_scope(func: ast.AST) -> dict[str, int]:
         elif isinstance(n, ast.AugAssign):
             if isinstance(n.target, ast.Name):
                 excluded.add(n.target.id)
-        elif isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            if n is not func:
-                excluded.add(n.name)
+        elif isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and n is not func:
+            excluded.add(n.name)
 
     assigned: dict[str, int] = {}
     for n in ast.walk(func):
@@ -269,9 +267,8 @@ def _assigned_names_in_scope(func: ast.AST) -> dict[str, int]:
             continue
         if isinstance(n, ast.Assign):
             for t in n.targets:
-                if isinstance(t, ast.Name) and not t.id.startswith("_"):
-                    if t.id not in excluded:
-                        assigned.setdefault(t.id, n.lineno)
+                if isinstance(t, ast.Name) and not t.id.startswith("_") and t.id not in excluded:
+                    assigned.setdefault(t.id, n.lineno)
         elif (
             isinstance(n, ast.AnnAssign)
             and (isinstance(n.target, ast.Name) and n.value and not n.target.id.startswith("_"))
